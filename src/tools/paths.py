@@ -1,6 +1,6 @@
 from pathlib import Path
 from fnmatch import fnmatch
-from src.config.config import get_work_dir
+from config.config import get_work_dir
 
 BLOCKER_PATH_PATTERNS = [
     ".env",
@@ -31,7 +31,7 @@ def is_blocked_path(path: str) -> bool:
 
 def resolve_work_path(path: str) -> str:
     work_dir = get_work_dir()
-    work_dir.mkdir(parent=True, exist_ok=True)
+    work_dir.mkdir(parents=True, exist_ok=True)
 
     candidate = (work_dir / path).resolve()
 

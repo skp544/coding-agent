@@ -19,7 +19,7 @@ class BackgroundJob:
     proc: Any = field(default=None, repr=False)
 
 
-_JOBS = dict[int, BackgroundJob] = ()
+_JOBS: dict[int, BackgroundJob] = {}
 
 
 def register(job: BackgroundJob) -> None:
@@ -44,6 +44,11 @@ def is_alive(pid: int) -> bool:
     if job is not None and job.proc is not None:
         return job.proc.poll() is None  # none means process is still alive
 
+    if os.name == "nt":
+        # No tracked handle and no safe liveness check on Windows
+        # (os.kill's signal 0 path actually terminates the process there).
+        return False
+
     try:
         os.kill(pid, 0)  # send signal 0
     except OSError:
@@ -67,7 +72,12 @@ def stop_pid(pid: int) -> None:
         return f"Job {pid} is already stopped"
 
     try:
-        os.killpg(pid, signal.SIGTERM)
+        if job.proc is not None:
+            job.proc.terminate()
+        elif hasattr(os, "killpg"):
+            os.killpg(pid, signal.SIGTERM)
+        else:
+            os.kill(pid, signal.SIGTERM)
     except ProcessLookupError:
         remove(pid)
         return f"Job {pid} is already stopped"
@@ -79,7 +89,7 @@ def stop_pid(pid: int) -> None:
             job.proc.wait(timeout=1.5)
         except subprocess.TimeoutExpired:
             with contextlib.suppress(ProcessLookupError, PermissionError):
-                os.killpg(pid, signal.SIGKILL)
+                job.proc.kill()
 
             with contextlib.suppress(subprocess.TimeoutExpired):
                 job.proc.wait(timeout=1)

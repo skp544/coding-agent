@@ -4,7 +4,7 @@ from tools import tool_catalog
 
 _env = Environment(
     loader=FileSystemLoader(PROMPTS_DIR),
-    autoescape=select_autoescape(enabled_extension=()),
+    autoescape=select_autoescape(enabled_extensions=()),
     trim_blocks=True,
     lstrip_blocks=True,
 )

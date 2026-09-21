@@ -29,7 +29,7 @@ class AuditMiddleware(AgentMiddleware):
                 "timestamp": datetime.now(UTC).isoformat(),
                 "tool": request.tool_call.get("name"),
                 "result_preview": preview,
-                "arguments": result.tool_call.get("args"),
+                "arguments": request.tool_call.get("args"),
             }
         )
 

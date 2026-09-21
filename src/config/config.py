@@ -7,7 +7,7 @@ load_dotenv()
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 # print(PROJECT_ROOT)
-PROMPTS_DIT = PROJECT_ROOT / "prompts"
+PROMPTS_DIR = PROJECT_ROOT / "prompts"
 
 DEFAULT_WORK_DIR = PROJECT_ROOT / "workspace"
 

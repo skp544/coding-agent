@@ -60,6 +60,6 @@ def build_agent(
         system_prompt=build_system_prompt(extra_guidance=extra_guidance),
         middleware=build_middleware(enable_hitl=use_hitl),
         response_format=ProviderStrategy(TurnSummary),
-        memory=checkpointer or make_checkpointer(),
-        name="Coding Agent",
+        checkpointer=checkpointer or make_checkpointer(),
+        name="coding_agent",
     )

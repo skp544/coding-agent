@@ -62,7 +62,7 @@ def chat() -> None:
     checkpointer = make_checkpointer()
     agent = build_agent(checkpointer=checkpointer)
 
-    config = thread_config()
+    config = thread_config(str(uuid.uuid4()))
 
     print(build_greeting())
     print(f"Provider: {provider.name} . {provider.model}")

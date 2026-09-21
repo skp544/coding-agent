@@ -11,7 +11,7 @@ class AgentTurnResult:
     text: str  # represents agents reply
     structured: TurnSummary | None
     messages: list[Any]
-    pending_interrupt: dict[str | any] | None
+    pending_interrupt: dict[str, Any] | None
 
 
 def _as_summary(value: Any) -> TurnSummary | None:

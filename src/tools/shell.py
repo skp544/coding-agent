@@ -2,6 +2,7 @@ import re
 import subprocess
 import sys
 import shlex
+import shutil
 import os
 import time
 
@@ -65,7 +66,7 @@ def deny_command(command: str) -> str | None:
         return "Blocked by middleware: command is empty"
 
     for patter in BLOCKED_COMMAND_PATTERNS:
-        if re.search(patter, stripped, flag=re.IGNORECASE):
+        if re.search(patter, stripped, flags=re.IGNORECASE):
 
             return f"Blocked by middleware: command matched dangerous pattern {patter}"
 
@@ -74,7 +75,7 @@ def deny_command(command: str) -> str | None:
 
 def looks_like_server(command: str) -> bool:
     return any(
-        re.search(pattern, command, flag=re.IGNORECASE) for pattern in SERVER_PATTERNS
+        re.search(pattern, command, flags=re.IGNORECASE) for pattern in SERVER_PATTERNS
     )
 
 
@@ -93,6 +94,20 @@ def rewrite_command(command: str) -> str:
         return _FLASK_PREFIX.sub(f"{exe} -m flask", stripped, count=1)
 
     return stripped
+
+
+def _bash_executable() -> str:
+    found = shutil.which("bash")
+
+    if found:
+        return found
+
+    if os.path.exists("/bin/bash"):
+        return "/bin/bash"
+
+    raise FileNotFoundError(
+        "bash executable not found. Install Git Bash/WSL or add bash to PATH."
+    )
 
 
 def _clip(text: str) -> str:
@@ -114,7 +129,7 @@ def _run_foreground(command: str, timeout: int) -> str:
     try:
 
         completed = subprocess.run(
-            ["/bin/bash", "-lc", command],
+            [_bash_executable(), "-lc", command],
             cwd=cwd,
             env=env,
             capture_output=True,
@@ -124,7 +139,7 @@ def _run_foreground(command: str, timeout: int) -> str:
 
     except subprocess.TimeoutExpired as e:
 
-        stdout = e.stdout or "" + e.stderr or ""
+        stdout = (e.stdout or "") + (e.stderr or "")
 
         return (
             f"Timed out after {timeout}s (process killed)."
@@ -159,12 +174,12 @@ def _run_background(command: str) -> str:
     log_dir.mkdir(parents=True, exist_ok=True)
 
     stamp = now_iso().replace(":", "").replace("+", "")
-    tmp_log = log_dir / f"pending-{stamp}.log"
-    log_file = tmp_log.open("w", encoding="utf-8")
+    log_path = log_dir / f"job-{stamp}.log"
+    log_file = log_path.open("w", encoding="utf-8")
 
     try:
         proc = subprocess.Popen(
-            ["/bin/bash", "-lc", command],
+            [_bash_executable(), "-lc", command],
             cwd=cwd,
             env=env,
             stdout=log_file,
@@ -173,9 +188,6 @@ def _run_background(command: str) -> str:
         )
     finally:
         log_file.close()
-
-    log_path = log_dir / f"{proc.id}.log"
-    tmp_log.rename(log_path)
 
     register(
         BackgroundJob(
@@ -191,11 +203,11 @@ def _run_background(command: str) -> str:
 
     tail = read_log_tail(log_path)
 
-    if proc.poll is not None:
+    if proc.poll() is not None:
         stop_pid(proc.pid)
         return (
             f"Background command exited immediately (pid={proc.pid}) "
-            f"exitC_code={proc.returncode}\{_clip(tail)}"
+            f"exit_code={proc.returncode}\n{_clip(tail)}"
         )
 
     # if process still runing
